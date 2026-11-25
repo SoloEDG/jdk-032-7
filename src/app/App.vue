@@ -4,12 +4,13 @@ import { AudioWaveform, ChevronDown, Cloud, Dot } from '@lucide/vue'
 import { PiecePalette, BuildCanvas, ObjectInspector } from '@/features/layout'
 import { MechanismPanel } from '@/features/mechanisms'
 import { ScenePanel } from '@/features/scene'
-import { SimulationBar } from '@/features/simulation'
+import { SimulationBar, StartCuePanel } from '@/features/simulation'
 import { ReplayPanel } from '@/features/replay'
 import { useWorkspace } from './useWorkspace'
 
 const {
-  document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, place, move, focusEvent,
+  document, saveState, focusPieceId, layout, mechanisms, scene, simulation, startCues, review,
+  place, move, focusEvent, loadCollisionScenario,
 } = useWorkspace()
 const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : saveState.value === 'saving' ? '保存中' : '尚未保存')
 </script>
@@ -35,6 +36,9 @@ const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : sav
           :message="mechanisms.message.value" @update:from-id="mechanisms.fromId.value = $event"
           @update:to-id="mechanisms.toId.value = $event" @add="mechanisms.add" @remove="mechanisms.remove" @toggle="mechanisms.toggle" />
         <div class="rail-divider"></div>
+        <StartCuePanel :document="document" :cues="startCues.cues.value" :selected-id="layout.selectedId.value"
+          @add="startCues.add" @update="startCues.update" @remove="startCues.remove" @load-scenario="loadCollisionScenario" />
+        <div class="rail-divider"></div>
         <ScenePanel :scene="document.scene" @update="scene.update" />
       </aside>
 
@@ -58,7 +62,7 @@ const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : sav
       <aside class="right-rail">
         <ObjectInspector :piece="layout.selected.value" @rotate="layout.rotate" @remove="layout.remove" @update="layout.update" />
         <div class="rail-divider"></div>
-        <ReplayPanel :run="simulation.run.value" :events="review.events.value" :time="review.time.value"
+        <ReplayPanel :document="document" :run="simulation.run.value" :events="review.events.value" :time="review.time.value"
           :playing="review.playing.value" :current-event="review.currentEvent.value" :stale="simulation.stale.value"
           @toggle="review.toggle" @seek="review.seek" @restart="review.restart" @event="focusEvent" />
       </aside>

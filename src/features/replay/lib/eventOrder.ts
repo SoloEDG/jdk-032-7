@@ -1,7 +1,12 @@
 import type { SimulationEvent } from '@/shared/document'
 
 export function sortedEvents(events: readonly SimulationEvent[]) {
-  return [...events].sort((a, b) => a.time - b.time || a.id.localeCompare(b.id))
+  return events
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => a.event.time - b.event.time
+      || (a.event.sequence ?? Number.MAX_SAFE_INTEGER) - (b.event.sequence ?? Number.MAX_SAFE_INTEGER)
+      || a.index - b.index)
+    .map(entry => entry.event)
 }
 
 export function previousEvent(events: readonly SimulationEvent[], time: number) {

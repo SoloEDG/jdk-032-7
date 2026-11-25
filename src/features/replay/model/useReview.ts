@@ -1,12 +1,12 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import type { SimulationRun } from '@/shared/document'
-import { previousEvent } from '../lib/eventOrder'
+import { previousEvent, sortedEvents } from '../lib/eventOrder'
 
 export function useReview(run: Ref<SimulationRun | null>) {
   const time = ref(0)
   const playing = ref(false)
   let timer = 0
-  const events = computed(() => run.value?.events ?? [])
+  const events = computed(() => sortedEvents(run.value?.events ?? []))
   const currentEvent = computed(() => previousEvent(events.value, time.value))
   const focusPieceId = computed(() => currentEvent.value?.pieceId ?? null)
 

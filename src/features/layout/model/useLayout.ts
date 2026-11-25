@@ -58,11 +58,18 @@ export function useLayout(document: Ref<DominoDocument>, changed: () => void) {
 
   function remove(id: string) {
     const pieces = document.value.pieces.filter(piece => piece.id !== id)
+    const startCues = Array.isArray(document.value.startCues)
+      ? document.value.startCues.filter(cue => cue.pieceId !== id)
+      : document.value.startCues
+    const nextStartPieceId = document.value.startPieceId === id
+      ? (Array.isArray(startCues) ? [...startCues].sort((a, b) => a.time - b.time)[0]?.pieceId : pieces[0]?.id) ?? pieces[0]?.id ?? ''
+      : document.value.startPieceId
     document.value = {
       ...document.value,
       pieces,
+      startCues,
       connections: document.value.connections.filter(link => link.from !== id && link.to !== id),
-      startPieceId: document.value.startPieceId === id ? pieces[0]?.id ?? '' : document.value.startPieceId,
+      startPieceId: nextStartPieceId,
     }
     if (selectedId.value === id) selectedId.value = null
     changed()

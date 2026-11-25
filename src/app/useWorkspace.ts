@@ -4,7 +4,7 @@ import { createDefaultDocument } from '@/shared/defaults'
 import { useLayout } from '@/features/layout'
 import { useMechanisms } from '@/features/mechanisms'
 import { useScene, clampToScene } from '@/features/scene'
-import { useSimulation } from '@/features/simulation'
+import { useSimulation, useStartCues, createCollisionScenarioDocument, createTimedConvergenceDocument } from '@/features/simulation'
 import { useReview } from '@/features/replay'
 
 const storageKey = 'chainline-jdk032-project-v1'
@@ -40,7 +40,17 @@ export function useWorkspace() {
   const mechanisms = useMechanisms(document, changed)
   const scene = useScene(document, changed)
   const simulation = useSimulation(document)
+  const startCues = useStartCues(document, changed)
   const review = useReview(simulation.run)
+
+  function loadCollisionScenario(kind: 'simultaneous-strong' | 'a-first' | 'b-first' = 'simultaneous-strong') {
+    document.value = kind === 'simultaneous-strong'
+      ? createCollisionScenarioDocument('simultaneous-strong')
+      : createTimedConvergenceDocument(kind === 'a-first' ? 'a' : 'b')
+    layout.select(null)
+    simulation.clear()
+    changed()
+  }
 
   watch(document, next => {
     saveState.value = 'saving'
@@ -93,5 +103,5 @@ export function useWorkspace() {
     window.clearTimeout(saveTimer)
   })
 
-  return { document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, place, move, focusEvent }
+  return { document, saveState, focusPieceId, layout, mechanisms, scene, simulation, startCues, review, place, move, focusEvent, loadCollisionScenario }
 }

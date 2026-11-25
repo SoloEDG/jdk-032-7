@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "vue-tsc --noEmit",
+    "test": "npm run verify:collisions",
+    "verify:collisions": "node scripts/verify-collisions.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

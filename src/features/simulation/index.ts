@@ -1,3 +1,7 @@
 export { useSimulation } from './model/useSimulation'
+export { useStartCues } from './model/useStartCues'
 export { default as SimulationBar } from './ui/SimulationBar.vue'
+export { default as StartCuePanel } from './ui/StartCuePanel.vue'
 export { propagate } from './lib/propagate'
+export { createCollisionScenarioDocument, createTimedConvergenceDocument } from './lib/collisionScenario'
+export { resolveCollision } from './lib/collisions'

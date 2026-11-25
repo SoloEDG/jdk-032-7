@@ -33,5 +33,6 @@ export function createDefaultDocument(): DominoDocument {
     ],
     scene: { gravity: 9.8, friction: 0.62, width: 21, height: 9, showGrid: true },
     startPieceId: 'd1',
+    startCues: [{ id: 'cue-default', pieceId: 'd1', time: 0, strength: 1 }],
   }
 }

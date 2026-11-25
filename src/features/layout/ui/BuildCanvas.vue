@@ -13,6 +13,12 @@ const emit = defineEmits<{
 const svg = ref<SVGSVGElement | null>(null)
 const view = { width: 1040, height: 510, margin: 35 }
 const fallen = computed(() => new Set(props.run?.events.filter(event => event.kind === 'fall').map(event => event.pieceId) ?? []))
+const cueMarkers = computed(() => {
+  if (Array.isArray(props.document.startCues)) return props.document.startCues
+  return props.document.startPieceId
+    ? [{ id: 'legacy-start', pieceId: props.document.startPieceId, time: 0 }]
+    : []
+})
 const failed = computed(() => props.run?.interruptedPieceId ?? null)
 let dragging: string | null = null
 
@@ -105,7 +111,10 @@ function eventTime(pieceId: string) {
         <path v-else-if="piece.kind === 'splitter'" d="M0-13 L13 0 L0 13 L-13 0 Z" :fill="pieceColor(piece)" class="splitter-body" filter="url(#piece-shadow)" />
         <circle v-else r="11" :fill="pieceColor(piece)" class="trigger-body" filter="url(#piece-shadow)" />
         <line v-if="piece.kind === 'domino'" x1="0" y1="-15" x2="0" y2="14" class="domino-mark" />
-        <circle v-if="piece.id === document.startPieceId" cy="-28" r="4" class="start-marker" />
+        <g v-for="cue in cueMarkers" :key="cue.id" pointer-events="none">
+          <circle v-if="cue.pieceId === piece.id" cy="-28" r="4" class="start-marker" />
+          <text v-if="cue.pieceId === piece.id" y="-35" text-anchor="middle" class="cue-marker-time">{{ cue.time.toFixed(1) }}s</text>
+        </g>
         <circle v-if="piece.id === failed" cy="-34" r="7" class="failure-marker" />
         <text y="32" text-anchor="middle" class="piece-label">{{ piece.label }}</text>
         <text v-if="eventTime(piece.id)" y="44" text-anchor="middle" class="piece-time">{{ eventTime(piece.id) }}s</text>

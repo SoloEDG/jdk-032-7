@@ -22,6 +22,7 @@ export function useSimulation(document: Ref<DominoDocument>) {
         revision: snapshot.revision,
         startedAt: Date.now(),
         startPieceId: snapshot.startPieceId,
+        startCues: result.startCues,
         status: result.status,
         events: result.events,
         interruptedPieceId: result.interruptedPieceId,

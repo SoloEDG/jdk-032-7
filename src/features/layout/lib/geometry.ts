@@ -29,6 +29,11 @@ export function nextContact(source: Piece, candidates: readonly Piece[], reachSc
       return { piece, delta, distance: distance(source, piece), alignment: angleBetween(facing, delta) }
     })
     .filter(entry => entry.distance < source.height * 1.18 * reachScale && entry.alignment < 47)
-    .sort((a, b) => a.distance - b.distance || a.piece.id.localeCompare(b.piece.id))
+    .sort((a, b) => a.distance - b.distance
+      || a.alignment - b.alignment
+      || a.piece.y - b.piece.y
+      || a.piece.x - b.piece.x
+      || b.piece.height - a.piece.height
+      || a.piece.id.localeCompare(b.piece.id))
   return nearby[0]?.piece ?? null
 }

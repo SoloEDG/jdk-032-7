@@ -1,15 +1,38 @@
 <script setup lang="ts">
-import { AlertTriangle, CheckCircle2, CircleStop, FastForward, Pause, Play, RotateCcw, SkipBack } from '@lucide/vue'
-import type { SimulationEvent, SimulationRun } from '@/shared/document'
+import { AlertTriangle, CheckCircle2, CircleStop, FastForward, GitMerge, Pause, Play, RotateCcw, SkipBack } from '@lucide/vue'
+import type { DominoDocument, ReachRecord, SimulationEvent, SimulationRun } from '@/shared/document'
 import { formatSeconds } from '@/shared/time'
 
-defineProps<{
+const props = defineProps<{
+  document: DominoDocument | null
   run: SimulationRun | null; events: SimulationEvent[]; time: number; playing: boolean
   currentEvent: SimulationEvent | null; stale: boolean
 }>()
 const emit = defineEmits<{ toggle: []; seek: [number]; restart: []; event: [string] }>()
 const iconFor = (kind: SimulationEvent['kind']) => kind === 'interrupted' ? AlertTriangle
-  : kind === 'mechanism' ? FastForward : CheckCircle2
+  : kind === 'merged' ? GitMerge
+    : kind === 'mechanism' ? FastForward : CheckCircle2
+
+function pieceLabel(id?: string | null) {
+  if (!id) return '起点'
+  return props.document?.pieces.find(piece => piece.id === id)?.label ?? id
+}
+function eventTitle(event: SimulationEvent) {
+  if (event.kind === 'merged') return '合并触达'
+  if (event.winningReach?.kind === 'start') return '起倒点'
+  return event.detail.split(' · ')[0]
+}
+function eventSubtitle(event: SimulationEvent) {
+  const subtitle = event.detail.split(' · ').slice(1).join(' · ')
+  return subtitle || event.pieceId
+}
+function reachText(reach?: ReachRecord | null) {
+  if (!reach) return '未知触达'
+  const source = reach.kind === 'start'
+    ? (reach.cueLabel || '定时起点')
+    : `${reach.kind === 'contact' ? '碰撞' : '连线'} · ${pieceLabel(reach.sourceId)}`
+  return `${source} / t=${reach.time.toFixed(2)}s / 冲量=${reach.strength.toFixed(2)}`
+}
 </script>
 
 <template>
@@ -34,6 +57,23 @@ const iconFor = (kind: SimulationEvent['kind']) => kind === 'interrupted' ? Aler
           @input="emit('seek', Number(($event.target as HTMLInputElement).value))" />
         <span class="replay-clock mono">{{ formatSeconds(run.duration) }}</span>
       </div>
+
+      <div v-if="currentEvent?.collision" class="collision-card" aria-live="polite">
+        <strong>触达仲裁 · {{ pieceLabel(currentEvent.pieceId) }}</strong>
+        <p>{{ currentEvent.collision.explanation }}</p>
+        <p v-if="currentEvent.winningReach" class="reach-winner">胜出：{{ reachText(currentEvent.winningReach) }}</p>
+        <ul v-if="currentEvent.mergedReaches?.length" class="reach-list">
+          <li v-for="reach in currentEvent.mergedReaches" :key="reach.id">
+            <span>合并：{{ reachText(reach) }}</span><em>{{ reach.status === 'merged-late' ? '晚到合并' : '同刻合并' }}</em>
+          </li>
+        </ul>
+      </div>
+      <div v-else-if="currentEvent?.kind === 'merged'" class="collision-card merged" aria-live="polite">
+        <strong>被合并的触达 · {{ pieceLabel(currentEvent.pieceId) }}</strong>
+        <p>{{ currentEvent.detail }}</p>
+        <p class="reach-merged">{{ reachText(currentEvent.reach) }}</p>
+      </div>
+
       <div class="event-list-heading"><span>事件轨迹</span><span>{{ events.length }} EVENTS</span></div>
       <ol class="event-list">
         <li v-for="event in events" :key="event.id">
@@ -41,14 +81,17 @@ const iconFor = (kind: SimulationEvent['kind']) => kind === 'interrupted' ? Aler
             :aria-current="currentEvent?.id === event.id ? 'step' : undefined" @click="emit('event', event.id)">
             <span class="event-time mono">{{ formatSeconds(event.time) }}</span>
             <span class="event-icon"><component :is="iconFor(event.kind)" :size="14" /></span>
-            <span class="event-copy"><strong>{{ run.events.find(item => item.id === event.id)?.pieceId === run.startPieceId ? '启动点' : event.detail.split(' · ')[0] }}</strong><small>{{ event.detail.split(' · ')[1] ?? event.pieceId }}</small></span>
-            <span v-if="event.kind === 'interrupted'" class="event-flag">中断</span>
+            <span class="event-copy"><strong>{{ eventTitle(event) }}</strong><small :title="event.detail">{{ eventSubtitle(event) }}</small></span>
+            <span class="event-flags">
+              <span v-if="event.mergedReaches?.length" class="event-merge-flag">合并 {{ event.mergedReaches.length }}</span>
+              <span v-if="event.kind === 'interrupted'" class="event-flag">中断</span>
+            </span>
           </button>
         </li>
       </ol>
       <div v-if="run.interruptedPieceId" class="interruption-card">
         <span class="interrupt-icon"><AlertTriangle :size="16" /></span>
-        <div><strong>中断位置</strong><p>{{ run.events.find(event => event.kind === 'interrupted')?.pieceId }} 未触及下一件元件。返回场景调整间距或方向，再次模拟。</p></div>
+        <div><strong>中断位置</strong><p>{{ pieceLabel(run.interruptedPieceId) }} 未产生新的下游触达。可返回场景调整间距、方向或碰撞强度。</p></div>
         <button :aria-label="'定位到 ' + run.interruptedPieceId" @click="emit('event', run.events.find(event => event.kind === 'interrupted')?.id ?? '')">定位</button>
       </div>
       <div v-if="stale" class="stale-note"><RotateCcw :size="13" /> 当前布局已改变，这份结果仍对应运行时保存的场景。</div>
